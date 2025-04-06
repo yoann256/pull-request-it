@@ -1,0 +1,1483 @@
+Touch and hold a clip to pin it. Unpinned clips will be deleted after 1 hour.Welcome to Gboard clipboard, any text that you copy will be saved here.Touch and hold a clip to pin it. Unpinned clips will be deleted after 1 hour.Welcome to Gboard clipboard, any text that you copy will be saved here.Touch and hold a clip to pin it. Unpinned clips will be deleted after 1 hour.Welcome to Gboard clipboard, any text that you copy will be saved here.Tap on a clip to paste it in the text box.Welcome to Gboard clipboard, any text that you copy will be saved here.Touch and hold a clip to pin it. Unpinned clips will be deleted after 1 hour.Tap on a clip to paste it in the text box.Touch and hold a clip to pin it. Unpinned clips will be deleted after 1 hour.Use the edit icon to pin, add or delete clips.Tap on a clip to paste it in the text box.Welcome to Gboard clipboard, any text that you copy will be saved here.Touch and hold a clip to pin it. Unpinned clips will be deleted after 1 hour.Welcome to Gboard clipboard, any text that you copy will be saved here.Tap on a clip to paste it in the text box.Welcome to Gboard clipboard, any text that you copy will be saved here.Touch and hold a clip to pin it. Unpinned clips will be deleted after 1 hour.// === STYLES ===
+const style = document.createElement("style");
+style.textContent = `
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #e5e5e5;
+    overflow: hidden;
+  }
+
+  .explorer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    z-index: 0;
+  }
+
+  .toolbar {
+    padding: 5px;
+    background: #f1f1f1;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .toolbar button {
+    margin-right: 10px;
+  }
+
+  .breadcrumb {
+    padding: 10px;
+    font-size: 14px;
+    color: #555;
+    background: #fafafa;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .files {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .file {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+  }
+
+  .file img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .scanner-window {
+    position: absolute;
+    top: 100px;
+    left: 100px;
+    width: 400px;
+    height: 300px;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: #222;
+    border-radius: 8px;
+    box-shadow: 0 0 20px #000;
+    color: #0f0;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+    overflow: hidden;
+  }
+
+  .scanner-titlebar {
+    background: #FF6F00;
+    color: #fff;
+    padding: 10px;
+    font-weight: bold;
+    cursor: move;
+  }
+
+  .scanner-content {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 13px;
+    background: #111;
+  }
+
+  .popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border: 3px solid red;
+    padding: 20px;
+    z-index: 9999;
+    box-shadow: 0 0 15px red;
+    text-align: center;
+    width: 90%;
+    max-width: 300px;
+  }
+
+  .popup h2 {
+    color: red;
+    font-size: 20px;
+  }
+
+  .popup p {
+    margin: 10px 0;
+  }
+
+  .popup button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+`;
+document.head.appendChild(style);
+
+// === FILE EXPLORER ===
+const explorer = document.createElement("div");
+explorer.className = "explorer";
+explorer.innerHTML = `
+  <div class="toolbar">
+    <button>Organize</button>
+    <button>Open</button>
+    <button>New Folder</button>
+  </div>
+  <div class="breadcrumb">Computer > Local Disk (C:) > Users > John</div>
+  <div class="files">
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-invoices.png"/> Documents</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-pictures.png"/> Pictures</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/file.png"/> important.docx</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/file.png"/> strange_file.scr</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-music.png"/> Music</div>
+  </div>
+`;
+document.body.appendChild(explorer);
+
+// === SCANNER WINDOW ===
+const scanner = document.createElement("div");
+scanner.className = "scanner-window";
+scanner.innerHTML = `
+  <div class="scanner-titlebar">Avast Virus Scanner</div>
+  <div class="scanner-content" id="log"></div>
+`;
+document.body.appendChild(scanner);
+
+// === DRAGGABLE SCANNER ===
+let isDragging = false;
+let offsetX, offsetY;
+
+const titlebar = scanner.querySelector(".scanner-titlebar");
+titlebar.addEventListener("mousedown", e => {
+  isDragging = true;
+  offsetX = e.clientX - scanner.offsetLeft;
+  offsetY = e.clientY - scanner.offsetTop;
+});
+
+document.addEventListener("mousemove", e => {
+  if (isDragging) {
+    scanner.style.left = `${e.clientX - offsetX}px`;
+    scanner.style.top = `${e.clientY - offsetY}px`;
+  }
+});
+
+document.addEventListener("mouseup", () => {
+  isDragging = false;
+});
+
+// === VIRUS POPUP ===
+const popup = document.createElement("div");
+popup.className = "popup";
+popup.innerHTML = `
+  <h2>Your device is infected with 918 viruses!</h2>
+  <p>Fix them immediately for a smoother experience!</p>
+  <a href="https://www.avast.com" target="_blank">
+    <button>FIX NOW</button>
+  </a>
+`;
+document.body.appendChild(popup);
+
+// === VIRUS SCAN LOGIC ===
+const logContainer = document.getElementById("log");
+let virusCount = 0;
+const maxViruses = 918;
+const virusNames = [
+  'Trojan.GenericKD', 'Worm.AutoRun.fg', 'Backdoor.Win32.Pinkslip',
+  'Spyware.Agent.AA', 'Rootkit.HiddenProc', 'Adware.PopMe', 
+  'PUA.Bundler.Gen', 'Keylogger.TrackMe'
+];
+
+function logVirus() {
+  if (virusCount >= maxViruses) {
+    popup.style.display = "block";
+    return;
+  }
+  const div = document.createElement("div");
+  div.textContent = `Detected: ${virusNames[Math.floor(Math.random() * virusNames.length)]}`;
+  logContainer.appendChild(div);
+  logContainer.scrollTop = logContainer.scrollHeight;
+  virusCount++;
+  setTimeout(logVirus, 20);
+}
+
+logVirus();// === STYLES ===
+const style = document.createElement("style");
+style.textContent = `
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #e5e5e5;
+    overflow: hidden;
+  }
+
+  .explorer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    z-index: 0;
+  }
+
+  .toolbar {
+    padding: 5px;
+    background: #f1f1f1;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .toolbar button {
+    margin-right: 10px;
+  }
+
+  .breadcrumb {
+    padding: 10px;
+    font-size: 14px;
+    color: #555;
+    background: #fafafa;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .files {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .file {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+  }
+
+  .file img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .scanner-window {
+    position: absolute;
+    top: 100px;
+    left: 100px;
+    width: 400px;
+    height: 300px;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: #222;
+    border-radius: 8px;
+    box-shadow: 0 0 20px #000;
+    color: #0f0;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+    overflow: hidden;
+  }
+
+  .scanner-titlebar {
+    background: #FF6F00;
+    color: #fff;
+    padding: 10px;
+    font-weight: bold;
+    cursor: move;
+  }
+
+  .scanner-content {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 13px;
+    background: #111;
+  }
+
+  .popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border: 3px solid red;
+    padding: 20px;
+    z-index: 9999;
+    box-shadow: 0 0 15px red;
+    text-align: center;
+    width: 90%;
+    max-width: 300px;
+  }
+
+  .popup h2 {
+    color: red;
+    font-size: 20px;
+  }
+
+  .popup p {
+    margin: 10px 0;
+  }
+
+  .popup button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+`;
+document.head.appendChild(style);
+
+// === FILE EXPLORER ===
+const explorer = document.createElement("div");
+explorer.className = "explorer";
+explorer.innerHTML = `
+  <div class="toolbar">
+    <button>Organize</button>
+    <button>Open</button>
+    <button>New Folder</button>
+  </div>
+  <div class="breadcrumb">Computer > Local Disk (C:) > Users > John</div>
+  <div class="files">
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-invoices.png"/> Documents</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-pictures.png"/> Pictures</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/file.png"/> important.docx</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/file.png"/> strange_file.scr</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-music.png"/> Music</div>
+  </div>
+`;
+document.body.appendChild(explorer);
+
+// === SCANNER WINDOW ===
+const scanner = document.createElement("div");
+scanner.className = "scanner-window";
+scanner.innerHTML = `
+  <div class="scanner-titlebar">Avast Virus Scanner</div>
+  <div class="scanner-content" id="log"></div>
+`;
+document.body.appendChild(scanner);
+
+// === DRAGGABLE SCANNER ===
+let isDragging = false;
+let offsetX, offsetY;
+
+const titlebar = scanner.querySelector(".scanner-titlebar");
+titlebar.addEventListener("mousedown", e => {
+  isDragging = true;
+  offsetX = e.clientX - scanner.offsetLeft;
+  offsetY = e.clientY - scanner.offsetTop;
+});
+
+document.addEventListener("mousemove", e => {
+  if (isDragging) {
+    scanner.style.left = `${e.clientX - offsetX}px`;
+    scanner.style.top = `${e.clientY - offsetY}px`;
+  }
+});
+
+document.addEventListener("mouseup", () => {
+  isDragging = false;
+});
+
+// === VIRUS POPUP ===
+const popup = document.createElement("div");
+popup.className = "popup";
+popup.innerHTML = `
+  <h2>Your device is infected with 918 viruses!</h2>
+  <p>Fix them immediately for a smoother experience!</p>
+  <a href="https://www.avast.com" target="_blank">
+    <button>FIX NOW</button>
+  </a>
+`;
+document.body.appendChild(popup);
+
+// === VIRUS SCAN LOGIC ===
+const logContainer = document.getElementById("log");
+let virusCount = 0;
+const maxViruses = 918;
+const virusNames = [
+  'Trojan.GenericKD', 'Worm.AutoRun.fg', 'Backdoor.Win32.Pinkslip',
+  'Spyware.Agent.AA', 'Rootkit.HiddenProc', 'Adware.PopMe', 
+  'PUA.Bundler.Gen', 'Keylogger.TrackMe'
+];
+
+function logVirus() {
+  if (virusCount >= maxViruses) {
+    popup.style.display = "block";
+    return;
+  }
+  const div = document.createElement("div");
+  div.textContent = `Detected: ${virusNames[Math.floor(Math.random() * virusNames.length)]}`;
+  logContainer.appendChild(div);
+  logContainer.scrollTop = logContainer.scrollHeight;
+  virusCount++;
+  setTimeout(logVirus, 20);
+}
+
+logVirus();// === STYLES ===
+const style = document.createElement("style");
+style.textContent = `
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #e5e5e5;
+    overflow: hidden;
+  }
+
+  .explorer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    z-index: 0;
+  }
+
+  .toolbar {
+    padding: 5px;
+    background: #f1f1f1;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .toolbar button {
+    margin-right: 10px;
+  }
+
+  .breadcrumb {
+    padding: 10px;
+    font-size: 14px;
+    color: #555;
+    background: #fafafa;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .files {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .file {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+  }
+
+  .file img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .scanner-window {
+    position: absolute;
+    top: 100px;
+    left: 100px;
+    width: 400px;
+    height: 300px;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: #222;
+    border-radius: 8px;
+    box-shadow: 0 0 20px #000;
+    color: #0f0;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+    overflow: hidden;
+  }
+
+  .scanner-titlebar {
+    background: #FF6F00;
+    color: #fff;
+    padding: 10px;
+    font-weight: bold;
+    cursor: move;
+  }
+
+  .scanner-content {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 13px;
+    background: #111;
+  }
+
+  .popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border: 3px solid red;
+    padding: 20px;
+    z-index: 9999;
+    box-shadow: 0 0 15px red;
+    text-align: center;
+    width: 90%;
+    max-width: 300px;
+  }
+
+  .popup h2 {
+    color: red;
+    font-size: 20px;
+  }
+
+  .popup p {
+    margin: 10px 0;
+  }
+
+  .popup button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+`;
+document.head.appendChild(style);
+
+// === FILE EXPLORER ===
+const explorer = document.createElement("div");
+explorer.className = "explorer";
+explorer.innerHTML = `
+  <div class="toolbar">
+    <button>Organize</button>
+    <button>Open</button>
+    <button>New Folder</button>
+  </div>
+  <div class="breadcrumb">Computer > Local Disk (C:) > Users > John</div>
+  <div class="files">
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-invoices.png"/> Documents</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-pictures.png"/> Pictures</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/file.png"/> important.docx</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/file.png"/> strange_file.scr</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-music.png"/> Music</div>
+  </div>
+`;
+document.body.appendChild(explorer);
+
+// === SCANNER WINDOW ===
+const scanner = document.createElement("div");
+scanner.className = "scanner-window";
+scanner.innerHTML = `
+  <div class="scanner-titlebar">Avast Virus Scanner</div>
+  <div class="scanner-content" id="log"></div>
+`;
+document.body.appendChild(scanner);
+
+// === DRAGGABLE SCANNER ===
+let isDragging = false;
+let offsetX, offsetY;
+
+const titlebar = scanner.querySelector(".scanner-titlebar");
+titlebar.addEventListener("mousedown", e => {
+  isDragging = true;
+  offsetX = e.clientX - scanner.offsetLeft;
+  offsetY = e.clientY - scanner.offsetTop;
+});
+
+document.addEventListener("mousemove", e => {
+  if (isDragging) {
+    scanner.style.left = `${e.clientX - offsetX}px`;
+    scanner.style.top = `${e.clientY - offsetY}px`;
+  }
+});
+
+document.addEventListener("mouseup", () => {
+  isDragging = false;
+});
+
+// === VIRUS POPUP ===
+const popup = document.createElement("div");
+popup.className = "popup";
+popup.innerHTML = `
+  <h2>Your device is infected with 918 viruses!</h2>
+  <p>Fix them immediately for a smoother experience!</p>
+  <a href="https://www.avast.com" target="_blank">
+    <button>FIX NOW</button>
+  </a>
+`;
+document.body.appendChild(popup);
+
+// === VIRUS SCAN LOGIC ===
+const logContainer = document.getElementById("log");
+let virusCount = 0;
+const maxViruses = 918;
+const virusNames = [
+  'Trojan.GenericKD', 'Worm.AutoRun.fg', 'Backdoor.Win32.Pinkslip',
+  'Spyware.Agent.AA', 'Rootkit.HiddenProc', 'Adware.PopMe', 
+  'PUA.Bundler.Gen', 'Keylogger.TrackMe'
+];
+
+function logVirus() {
+  if (virusCount >= maxViruses) {
+    popup.style.display = "block";
+    return;
+  }
+  const div = document.createElement("div");
+  div.textContent = `Detected: ${virusNames[Math.floor(Math.random() * virusNames.length)]}`;
+  logContainer.appendChild(div);
+  logContainer.scrollTop = logContainer.scrollHeight;
+  virusCount++;
+  setTimeout(logVirus, 20);
+}
+
+logVirus();// === STYLES ===
+const style = document.createElement("style");
+style.textContent = `
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #e5e5e5;
+    overflow: hidden;
+  }
+
+  .explorer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    z-index: 0;
+  }
+
+  .toolbar {
+    padding: 5px;
+    background: #f1f1f1;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .toolbar button {
+    margin-right: 10px;
+  }
+
+  .breadcrumb {
+    padding: 10px;
+    font-size: 14px;
+    color: #555;
+    background: #fafafa;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .files {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .file {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+  }
+
+  .file img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .scanner-window {
+    position: absolute;
+    top: 100px;
+    left: 100px;
+    width: 400px;
+    height: 300px;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: #222;
+    border-radius: 8px;
+    box-shadow: 0 0 20px #000;
+    color: #0f0;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+    overflow: hidden;
+  }
+
+  .scanner-titlebar {
+    background: #FF6F00;
+    color: #fff;
+    padding: 10px;
+    font-weight: bold;
+    cursor: move;
+  }
+
+  .scanner-content {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 13px;
+    background: #111;
+  }
+
+  .popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border: 3px solid red;
+    padding: 20px;
+    z-index: 9999;
+    box-shadow: 0 0 15px red;
+    text-align: center;
+    width: 90%;
+    max-width: 300px;
+  }
+
+  .popup h2 {
+    color: red;
+    font-size: 20px;
+  }
+
+  .popup p {
+    margin: 10px 0;
+  }
+
+  .popup button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+`;
+document.head.appendChild(style);
+
+// === FILE EXPLORER ===
+const explorer = document.createElement("div");
+explorer.className = "explorer";
+explorer.innerHTML = `
+  <div class="toolbar">
+    <button>Organize</button>
+    <button>Open</button>
+    <button>New Folder</button>
+  </div>
+  <div class="breadcrumb">Computer > Local Disk (C:) > Users > John</div>
+  <div class="files">
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-invoices.png"/> Documents</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-pictures.png"/> Pictures</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/file.png"/> important.docx</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/file.png"/> strange_file.scr</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-music.png"/> Music</div>
+  </div>
+`;
+document.body.appendChild(explorer);
+
+// === SCANNER WINDOW ===
+const scanner = document.createElement("div");
+scanner.className = "scanner-window";
+scanner.innerHTML = `
+  <div class="scanner-titlebar">Avast Virus Scanner</div>
+  <div class="scanner-content" id="log"></div>
+`;
+document.body.appendChild(scanner);
+
+// === DRAGGABLE SCANNER ===
+let isDragging = false;
+let offsetX, offsetY;
+
+const titlebar = scanner.querySelector(".scanner-titlebar");
+titlebar.addEventListener("mousedown", e => {
+  isDragging = true;
+  offsetX = e.clientX - scanner.offsetLeft;
+  offsetY = e.clientY - scanner.offsetTop;
+});
+
+document.addEventListener("mousemove", e => {
+  if (isDragging) {
+    scanner.style.left = `${e.clientX - offsetX}px`;
+    scanner.style.top = `${e.clientY - offsetY}px`;
+  }
+});
+
+document.addEventListener("mouseup", () => {
+  isDragging = false;
+});
+
+// === VIRUS POPUP ===
+const popup = document.createElement("div");
+popup.className = "popup";
+popup.innerHTML = `
+  <h2>Your device is infected with 918 viruses!</h2>
+  <p>Fix them immediately for a smoother experience!</p>
+  <a href="https://www.avast.com" target="_blank">
+    <button>FIX NOW</button>
+  </a>
+`;
+document.body.appendChild(popup);
+
+// === VIRUS SCAN LOGIC ===
+const logContainer = document.getElementById("log");
+let virusCount = 0;
+const maxViruses = 918;
+const virusNames = [
+  'Trojan.GenericKD', 'Worm.AutoRun.fg', 'Backdoor.Win32.Pinkslip',
+  'Spyware.Agent.AA', 'Rootkit.HiddenProc', 'Adware.PopMe', 
+  'PUA.Bundler.Gen', 'Keylogger.TrackMe'
+];
+
+function logVirus() {
+  if (virusCount >= maxViruses) {
+    popup.style.display = "block";
+    return;
+  }
+  const div = document.createElement("div");
+  div.textContent = `Detected: ${virusNames[Math.floor(Math.random() * virusNames.length)]}`;
+  logContainer.appendChild(div);
+  logContainer.scrollTop = logContainer.scrollHeight;
+  virusCount++;
+  setTimeout(logVirus, 20);
+}
+
+logVirus();// === STYLES ===
+const style = document.createElement("style");
+style.textContent = `
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #e5e5e5;
+    overflow: hidden;
+  }
+
+  .explorer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    z-index: 0;
+  }
+
+  .toolbar {
+    padding: 5px;
+    background: #f1f1f1;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .toolbar button {
+    margin-right: 10px;
+  }
+
+  .breadcrumb {
+    padding: 10px;
+    font-size: 14px;
+    color: #555;
+    background: #fafafa;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .files {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .file {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+  }
+
+  .file img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .scanner-window {
+    position: absolute;
+    top: 100px;
+    left: 100px;
+    width: 400px;
+    height: 300px;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: #222;
+    border-radius: 8px;
+    box-shadow: 0 0 20px #000;
+    color: #0f0;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+    overflow: hidden;
+  }
+
+  .scanner-titlebar {
+    background: #FF6F00;
+    color: #fff;
+    padding: 10px;
+    font-weight: bold;
+    cursor: move;
+  }
+
+  .scanner-content {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 13px;
+    background: #111;
+  }
+
+  .popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border: 3px solid red;
+    padding: 20px;
+    z-index: 9999;
+    box-shadow: 0 0 15px red;
+    text-align: center;
+    width: 90%;
+    max-width: 300px;
+  }
+
+  .popup h2 {
+    color: red;
+    font-size: 20px;
+  }
+
+  .popup p {
+    margin: 10px 0;
+  }
+
+  .popup button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+`;
+document.head.appendChild(style);
+
+// === FILE EXPLORER ===
+const explorer = document.createElement("div");
+explorer.className = "explorer";
+explorer.innerHTML = `
+  <div class="toolbar">
+    <button>Organize</button>
+    <button>Open</button>
+    <button>New Folder</button>
+  </div>
+  <div class="breadcrumb">Computer > Local Disk (C:) > Users > John</div>
+  <div class="files">
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-invoices.png"/> Documents</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-pictures.png"/> Pictures</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/file.png"/> important.docx</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/file.png"/> strange_file.scr</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-music.png"/> Music</div>
+  </div>
+`;
+document.body.appendChild(explorer);
+
+// === SCANNER WINDOW ===
+const scanner = document.createElement("div");
+scanner.className = "scanner-window";
+scanner.innerHTML = `
+  <div class="scanner-titlebar">Avast Virus Scanner</div>
+  <div class="scanner-content" id="log"></div>
+`;
+document.body.appendChild(scanner);
+
+// === DRAGGABLE SCANNER ===
+let isDragging = false;
+let offsetX, offsetY;
+
+const titlebar = scanner.querySelector(".scanner-titlebar");
+titlebar.addEventListener("mousedown", e => {
+  isDragging = true;
+  offsetX = e.clientX - scanner.offsetLeft;
+  offsetY = e.clientY - scanner.offsetTop;
+});
+
+document.addEventListener("mousemove", e => {
+  if (isDragging) {
+    scanner.style.left = `${e.clientX - offsetX}px`;
+    scanner.style.top = `${e.clientY - offsetY}px`;
+  }
+});
+
+document.addEventListener("mouseup", () => {
+  isDragging = false;
+});
+
+// === VIRUS POPUP ===
+const popup = document.createElement("div");
+popup.className = "popup";
+popup.innerHTML = `
+  <h2>Your device is infected with 918 viruses!</h2>
+  <p>Fix them immediately for a smoother experience!</p>
+  <a href="https://www.avast.com" target="_blank">
+    <button>FIX NOW</button>
+  </a>
+`;
+document.body.appendChild(popup);
+
+// === VIRUS SCAN LOGIC ===
+const logContainer = document.getElementById("log");
+let virusCount = 0;
+const maxViruses = 918;
+const virusNames = [
+  'Trojan.GenericKD', 'Worm.AutoRun.fg', 'Backdoor.Win32.Pinkslip',
+  'Spyware.Agent.AA', 'Rootkit.HiddenProc', 'Adware.PopMe', 
+  'PUA.Bundler.Gen', 'Keylogger.TrackMe'
+];
+
+function logVirus() {
+  if (virusCount >= maxViruses) {
+    popup.style.display = "block";
+    return;
+  }
+  const div = document.createElement("div");
+  div.textContent = `Detected: ${virusNames[Math.floor(Math.random() * virusNames.length)]}`;
+  logContainer.appendChild(div);
+  logContainer.scrollTop = logContainer.scrollHeight;
+  virusCount++;
+  setTimeout(logVirus, 20);
+}
+
+logVirus();// === STYLES ===
+const style = document.createElement("style");
+style.textContent = `
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #e5e5e5;
+    overflow: hidden;
+  }
+
+  .explorer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    z-index: 0;
+  }
+
+  .toolbar {
+    padding: 5px;
+    background: #f1f1f1;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .toolbar button {
+    margin-right: 10px;
+  }
+
+  .breadcrumb {
+    padding: 10px;
+    font-size: 14px;
+    color: #555;
+    background: #fafafa;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .files {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .file {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+  }
+
+  .file img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .scanner-window {
+    position: absolute;
+    top: 100px;
+    left: 100px;
+    width: 400px;
+    height: 300px;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: #222;
+    border-radius: 8px;
+    box-shadow: 0 0 20px #000;
+    color: #0f0;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+    overflow: hidden;
+  }
+
+  .scanner-titlebar {
+    background: #FF6F00;
+    color: #fff;
+    padding: 10px;
+    font-weight: bold;
+    cursor: move;
+  }
+
+  .scanner-content {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 13px;
+    background: #111;
+  }
+
+  .popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border: 3px solid red;
+    padding: 20px;
+    z-index: 9999;
+    box-shadow: 0 0 15px red;
+    text-align: center;
+    width: 90%;
+    max-width: 300px;
+  }
+
+  .popup h2 {
+    color: red;
+    font-size: 20px;
+  }
+
+  .popup p {
+    margin: 10px 0;
+  }
+
+  .popup button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+`;
+document.head.appendChild(style);
+
+// === FILE EXPLORER ===
+const explorer = document.createElement("div");
+explorer.className = "explorer";
+explorer.innerHTML = `
+  <div class="toolbar">
+    <button>Organize</button>
+    <button>Open</button>
+    <button>New Folder</button>
+  </div>
+  <div class="breadcrumb">Computer > Local Disk (C:) > Users > John</div>
+  <div class="files">
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-invoices.png"/> Documents</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-pictures.png"/> Pictures</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/file.png"/> important.docx</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/file.png"/> strange_file.scr</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-music.png"/> Music</div>
+  </div>
+`;
+document.body.appendChild(explorer);
+
+// === SCANNER WINDOW ===
+const scanner = document.createElement("div");
+scanner.className = "scanner-window";
+scanner.innerHTML = `
+  <div class="scanner-titlebar">Avast Virus Scanner</div>
+  <div class="scanner-content" id="log"></div>
+`;
+document.body.appendChild(scanner);
+
+// === DRAGGABLE SCANNER ===
+let isDragging = false;
+let offsetX, offsetY;
+
+const titlebar = scanner.querySelector(".scanner-titlebar");
+titlebar.addEventListener("mousedown", e => {
+  isDragging = true;
+  offsetX = e.clientX - scanner.offsetLeft;
+  offsetY = e.clientY - scanner.offsetTop;
+});
+
+document.addEventListener("mousemove", e => {
+  if (isDragging) {
+    scanner.style.left = `${e.clientX - offsetX}px`;
+    scanner.style.top = `${e.clientY - offsetY}px`;
+  }
+});
+
+document.addEventListener("mouseup", () => {
+  isDragging = false;
+});
+
+// === VIRUS POPUP ===
+const popup = document.createElement("div");
+popup.className = "popup";
+popup.innerHTML = `
+  <h2>Your device is infected with 918 viruses!</h2>
+  <p>Fix them immediately for a smoother experience!</p>
+  <a href="https://www.avast.com" target="_blank">
+    <button>FIX NOW</button>
+  </a>
+`;
+document.body.appendChild(popup);
+
+// === VIRUS SCAN LOGIC ===
+const logContainer = document.getElementById("log");
+let virusCount = 0;
+const maxViruses = 918;
+const virusNames = [
+  'Trojan.GenericKD', 'Worm.AutoRun.fg', 'Backdoor.Win32.Pinkslip',
+  'Spyware.Agent.AA', 'Rootkit.HiddenProc', 'Adware.PopMe', 
+  'PUA.Bundler.Gen', 'Keylogger.TrackMe'
+];
+
+function logVirus() {
+  if (virusCount >= maxViruses) {
+    popup.style.display = "block";
+    return;
+  }
+  const div = document.createElement("div");
+  div.textContent = `Detected: ${virusNames[Math.floor(Math.random() * virusNames.length)]}`;
+  logContainer.appendChild(div);
+  logContainer.scrollTop = logContainer.scrollHeight;
+  virusCount++;
+  setTimeout(logVirus, 20);
+}
+
+logVirus();// STYLES
+const style = document.createElement("style");
+style.textContent = `
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #e5e5e5;
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .explorer {
+    flex: 1 1 60%;
+    min-width: 300px;
+    background: #fff;
+    border-right: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  .toolbar {
+    padding: 5px;
+    background: #f1f1f1;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .toolbar button {
+    margin-right: 10px;
+  }
+
+  .breadcrumb {
+    padding: 10px;
+    font-size: 14px;
+    color: #555;
+    background: #fafafa;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .files {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .file {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    cursor: default;
+  }
+
+  .file img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .scanner {
+    flex: 1 1 40%;
+    min-width: 300px;
+    background: #111;
+    color: #0f0;
+    padding: 10px;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .scanner h3 {
+    color: #fff;
+  }
+
+  .popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border: 3px solid red;
+    padding: 20px;
+    z-index: 9999;
+    box-shadow: 0 0 15px red;
+    text-align: center;
+    width: 300px;
+  }
+
+  .popup h2 {
+    color: red;
+    font-size: 20px;
+  }
+
+  .popup p {
+    margin: 10px 0;
+  }
+
+  .popup button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+`;
+document.head.appendChild(style);
+
+// HTML STRUCTURE
+const explorer = document.createElement("div");
+explorer.className = "explorer";
+explorer.innerHTML = `
+  <div class="toolbar">
+    <button>Organize</button>
+    <button>Open</button>
+    <button>New Folder</button>
+  </div>
+  <div class="breadcrumb">Computer > Local Disk (C:) > Users > John</div>
+  <div class="files">
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-invoices.png"/> Documents</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-pictures.png"/> Pictures</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/file.png"/> important.docx</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/file.png"/> strange_file.scr</div>
+    <div class="file"><img src="https://img.icons8.com/windows/32/folder-music.png"/> Music</div>
+  </div>
+`;
+document.body.appendChild(explorer);
+
+const scanner = document.createElement("div");
+scanner.className = "scanner";
+scanner.innerHTML = `<h3>Virus Scanner</h3><div id="log"></div>`;
+document.body.appendChild(scanner);
+
+const popup = document.createElement("div");
+popup.className = "popup";
+popup.innerHTML = `
+  <h2>Your device is infected with 918 viruses!</h2>
+  <p>Fix them immediately for a smoother experience!</p>
+  <a href="https://www.avast.com" target="_blank">
+    <button>FIX NOW</button>
+  </a>
+`;
+document.body.appendChild(popup);
+
+// LOGIC
+const logContainer = document.getElementById("log");
+let virusCount = 0;
+const maxViruses = 918;
+const virusNames = [
+  'Trojan.GenericKD', 'Worm.AutoRun.fg', 'Backdoor.Win32.Pinkslip',
+  'Spyware.Agent.AA', 'Rootkit.HiddenProc', 'Adware.PopMe', 
+  'PUA.Bundler.Gen', 'Keylogger.TrackMe'
+];
+
+function logVirus() {
+  if (virusCount >= maxViruses) {
+    popup.style.display = "block";
+    return;
+  }
+  const div = document.createElement("div");
+  div.textContent = `Detected: ${virusNames[Math.floor(Math.random() * virusNames.length)]} [Threat Level: High]`;
+  logContainer.appendChild(div);
+  logContainer.scrollTop = logContainer.scrollHeight;
+  virusCount++;
+  setTimeout(logVirus, 20);
+}
+
+logVirus();Welcome to Gboard clipboard, any text that you copy will be saved here.
