@@ -1,0 +1,26 @@
+From: <Saved by Blink>
+Snapshot-Content-Location: http://127.0.0.1:14129/main/0/storage/emulated/0/Android/data/com.teejay.trebedit/files/TrebEdit%20user%20files/tets/thanks.html
+Subject: Thanks
+Date: Wed, 19 Mar 2025 19:02:37 +0100
+MIME-Version: 1.0
+Content-Type: multipart/related;
+	type="text/html";
+	boundary="----MultipartBoundary--QElFe7I3EXLAReRSRlgVQTQ1h419ol205rArI57Lf0----"
+
+
+------MultipartBoundary--QElFe7I3EXLAReRSRlgVQTQ1h419ol205rArI57Lf0----
+Content-Type: text/html
+Content-ID: <frame-E4D48C0CDAAA7645455C9E2E12DE5895@mhtml.blink>
+Content-Transfer-Encoding: binary
+Content-Location: http://127.0.0.1:14129/main/0/storage/emulated/0/Android/data/com.teejay.trebedit/files/TrebEdit%20user%20files/tets/thanks.html
+
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <title>Thanks</title>
+</head>
+<body>
+    <h1>Thanks</h1>
+    <p>Be sure to star this repository if you liked this example!</p>
+
+</body></html>
+------MultipartBoundary--QElFe7I3EXLAReRSRlgVQTQ1h419ol205rArI57Lf0------
