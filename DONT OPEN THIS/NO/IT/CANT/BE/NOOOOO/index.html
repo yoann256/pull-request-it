@@ -1,0 +1,145 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Page</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: white;
+            text-align: center;
+            overflow: hidden; /* Prevent scrolling */
+        }
+
+        .container {
+            display: none; /* Hidden initially */
+            padding: 20px;
+            text-align: left;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            animation: fadeOut 0.5s ease-out 4s forwards;
+        }
+
+        .overlay img {
+            width: 25vw; /* Increased size by 25% */
+            max-width: 180px; /* Prevents it from being too large */
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            animation: blink 3s ease-in-out, moveUpScale 1s ease-in-out 3s forwards;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .my-icon {
+    width: 18vw; /* Responsive size */
+    max-width: 100px;
+    height: auto;
+    border: 2px solid grey; /* Thin grey border */
+    border-radius: 50%; /* Optional: Slightly rounded corners */
+}
+
+
+        .my-name {
+            font-size: 6vw; /* Larger text size */
+            max-font-size: 30px; /* Prevents it from getting too big */
+            font-weight: bold;
+        }
+        
+        .socials-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex; /* Makes the list horizontal */
+        gap: 15px; /* Adds spacing between items */
+    }
+    
+        .socials-list li a {
+            color: white;
+            font-size: 24px;
+        }
+        
+        .socials-list li {
+            color: white;
+            font-size: 24px;
+        }
+
+
+        hr {
+            border: none;
+            height: 2px;
+            background-color: grey; /* Change color */
+            margin: 20px 0; /* Adjust spacing */
+        }
+
+        
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes moveUpScale {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 1; transform: translateY(-100vh) scale(0.5); }
+        }
+
+        @keyframes fadeOut {
+                    100% { opacity: 0; visibility: hidden; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay">
+        <img src="your-image.png" alt="Logo">
+    </div>
+
+    <div class="container">
+        <div class="topbar">
+            <img class="my-icon" src="your-image.png" alt="My Icon">
+            <span class="my-name">RTX3080Ti</span>
+            <div class="socials">
+                <ul class="socials-list">
+                    <li><ion-icon name="logo-discord"></ion-icon></li>
+                    <li><a href="https://github.com/RTX3080Ti-Official"><ion-icon name="logo-github"></ion-icon></a></li>
+                </ul>
+            </div>
+        </div>
+        <hr>
+        <h1>RTX3080Ti Main Website</h1>
+        <p>In this website, you can see my projects, my socials, and much more!</p>
+        <section class="main-body">
+            <a href="pages/projects.html">wow</a>
+        </section>
+    </div>
+
+    <script>
+        setTimeout(() => {
+            document.querySelector('.container').style.display = 'block';
+        }, 4200);
+    </script>
+
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</body>
+</html>

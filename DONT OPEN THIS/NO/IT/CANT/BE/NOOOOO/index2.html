@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Page</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: white;
+            text-align: center;
+        }
+
+        .container {
+            display: none; /* Hidden initially */
+            padding: 50px;
+            text-align: left;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            animation: fadeOut 0.5s ease-out 4s forwards;
+        }
+
+        .overlay img {
+            width: 150px;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            animation: blink 3s ease-in-out, moveUpScale 1s ease-in-out 3s forwards;
+        }
+        
+        .my-icon {
+            width: 25%;
+            height: 25%;
+        }
+        
+        .my-name {
+            
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes moveUpScale {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 1; transform: translateY(-100vh) scale(0.5); }
+        }
+
+        @keyframes fadeOut {
+            100% { opacity: 0; visibility: hidden; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay">
+        <img src="your-image.png" alt="Logo">
+    </div>
+
+    <div class="container">
+        <div class="topbar">
+            <img class="my-icon" src="your-image.png" alt="My Icon">
+            <span class="my-name">RTX3080Ti</span>
+        </div>
+        
+        <h1>Welcome to My Page</h1>
+        <p>This is the main content after the animation.</p>
+    </div>
+
+    <script>
+        setTimeout(() => {
+            document.querySelector('.container').style.display = 'block';
+        }, 4200); // Show content after animation
+    </script>
+
+</body>
+</html>
